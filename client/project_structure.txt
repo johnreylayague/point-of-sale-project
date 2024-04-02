@@ -1,0 +1,70 @@
+project-management/
+  ├── public/
+  │   ├── index.html
+  │   └── ...
+  ├── src/
+  │   ├── assets/  
+  │   │   ├── css/
+  │   │   │   └── global.css  
+  │   ├── components/
+  │   │   ├── common/
+  │   │   │   ├── elements/  
+  │   │   │   │   ├── Card/  
+  │   │   │   │   │   ├── Card.js
+  │   │   │   │   │   ├── Card.module.css
+  │   │   │   │   │   └── ...  
+  │   │   │   │   ├── Button/  
+  │   │   │   │   │   ├── Button.js
+  │   │   │   │   │   ├── Button.module.css  
+  │   │   │   │   │   └── ...
+  │   │   │   │   └── Input/  
+  │   │   │   │       ├── Input.js
+  │   │   │   │       ├── Input.module.css  
+  │   │   │   │       └── ...
+  │   │   │   ├── MouseActivityTracker/  
+  │   │   │   │   ├── MouseActivityTracker.js
+  │   │   │   │   └── ...    
+  │   │   │   └── ProtectedRoute/  
+  │   │   │       ├── ProtectedRoute.js
+  │   │   │       ├── ProtectedRoute.module.css  
+  │   │   │       ├── ProtectedRoute.test.js  
+  │   │   │       └── ...    
+  │   │   ├── layout/  
+  │   │   │   ├── Header/  
+  │   │   │   │   ├── Header.js
+  │   │   │   │   ├── Header.module.css 
+  │   │   │   │   ├── PublicHeader.js
+  │   │   │   │   ├── PublicHeader.module.css   
+  │   │   │   │   └── ...  
+  │   │   │   └── Footer/  
+  │   │   │       ├── Footer.js
+  │   │   │       ├── Footer.module.css  
+  │   │   │       └── ...    
+  │   │   └── ...
+  │   ├── services/
+  │   │   ├── api.js
+  │   │   └── ...
+  │   ├── utils/
+  │   │   ├── constants.js
+  │   │   ├── dateUtils.js
+  │   │   ├── stringUtils.js
+  │   │   ├── validationUtils.js  
+  │   │   └── ...
+  │   ├── helpers/
+  │   │   ├── componentHelpers.js
+  │   │   ├── screenHelpers.js
+  │   │   ├── serviceHelpers.js
+  │   │   └── ...  
+  │   ├── screens/
+  │   │   ├── Dashboard.js
+  │   │   ├── Dashboard.module.css    
+  │   │   ├── Login.js  
+  │   │   ├── Login.module.css  
+  │   │   └── ...  
+  │   ├── App.js
+  │   ├── index.js
+  │   └── ...
+  ├── .env
+  ├── package.json  
+  ├── .gitignore
+  └── ...

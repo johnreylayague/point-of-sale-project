@@ -9,3 +9,9 @@ npm install --save mongoose
 npm install --save mongoose-unique-validaotr
 npm install --save bcryptjs
 npm install --save jsonwebtoken
+npm install --save uuid
+npm install public-ip@3
+
+npm install he  // for decoding on escape() i dont knwo if i will use this
+npm install public-ip // useless
+npm install systeminformation // useless

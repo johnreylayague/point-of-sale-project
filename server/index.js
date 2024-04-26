@@ -2,15 +2,27 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 
-const usersRoutes = require("./routes/users-routes");
-const authRoutes = require("./routes/auth-routes");
+const countriesRoutes_BackOffice = require("./routes/bo-countries-routes");
+const menuRoutes_BackOffice = require("./routes/bo-menus-routes");
+
+const productRoutes_BackOffice = require("./routes/bo-products-routes");
+const authRoutes_BackOffice = require("./routes/bo-auth-routes");
+const categoriesRoutes_BackOffice = require("./routes/bo-categories-routes");
+const productsRoutes_POS = require("./routes/pos-products-routes");
+const acitivtyLogRoutes_BackOffice = require("./routes/bo-acitivtyLog-routes");
 
 const app = express();
 
 app.use(bodyParser.json());
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/users", usersRoutes);
+app.use("/api/v1/auth", authRoutes_BackOffice);
+app.use("/api/v1/menus", menuRoutes_BackOffice);
+app.use("/api/v1/products", productRoutes_BackOffice);
+app.use("/api/v1/categories", categoriesRoutes_BackOffice);
+app.use("/api/v1/countries", countriesRoutes_BackOffice);
+app.use("/api/v1/activityLog", acitivtyLogRoutes_BackOffice);
+
+app.use("/api/v2/products", productsRoutes_POS);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "Could not find this route." });

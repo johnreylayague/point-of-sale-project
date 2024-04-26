@@ -2,18 +2,13 @@ const bcrypt = require("bcryptjs");
 
 const HttpError = require("../models/http-error");
 
-const validatePassword = async (password, existingPassword, next) => {
+const validatePassword = async (password, existingPassword) => {
   let isValidPassword = false;
 
   try {
     isValidPassword = await bcrypt.compare(password, existingPassword);
   } catch (err) {
-    const error = new HttpError(
-      "Could not log you in, please check your credentials and try again.",
-      500
-    );
-
-    return next(error);
+    throw new Error(err);
   }
 
   return isValidPassword;
@@ -24,10 +19,7 @@ const generateHashedPassword = async (password, next) => {
   try {
     hashedPassword = await bcrypt.hash(password, 12);
   } catch (err) {
-    const error = new HttpError(
-      "Could not create user, please try again.",
-      500
-    );
+    const error = new HttpError(err, 500);
     return next(error);
   }
   return hashedPassword;

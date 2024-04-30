@@ -39,6 +39,11 @@ const productSchema = new Schema({
     ref: "Shape",
     default: null,
   },
+  RepresentationId: {
+    type: mongoose.Types.ObjectId,
+    ref: "Representation",
+    required: true,
+  },
   Price: {
     type: mongoose.Types.Decimal128,
     default: null,

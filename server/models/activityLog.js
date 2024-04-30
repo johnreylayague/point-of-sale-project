@@ -4,7 +4,7 @@ const uniqueValidator = require("mongoose-unique-validator");
 const Schema = mongoose.Schema;
 
 const activityLog = new Schema({
-  UserId: {
+  CreatorId: {
     type: mongoose.Types.ObjectId,
     required: true,
     ref: "User",

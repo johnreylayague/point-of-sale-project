@@ -1,7 +1,6 @@
 const { check, param, query } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const bycryptUtil = require("../../shared/bycryptUtil");
-const validateUtil = require("../../shared/validateUtil_TBD");
 const tokenModel = require("../../../models/token");
 const userModel = require("../../../models/user");
 const userLogModel = require("../../../models/userLog");

@@ -10,7 +10,7 @@ const referenceModel = require("../../models/reference");
 const HttpError = require("../../models/http-error");
 const crypto = require("crypto");
 const auth = require("../../utils/shared/authUtil");
-const validateUtil = require("../../utils/shared/validateUtil_TBD");
+const dateTimeUtil = require("../../utils/shared/dateTimeUtil");
 const bycryptUtil = require("../../utils/shared/bycryptUtil");
 const hardwareInfoUtil = require("../../utils/shared/hardwareInformationUtil");
 const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
@@ -243,7 +243,7 @@ const resetPassword = async (req, res, next) => {
 
   // ma expire ang reset token, if expire invalid na sya og e delete nato sa collection
   // same message ang token error pra dli nya mahibaw.an if active ang token
-  if (validateUtil.isDurationPassed(token.CreatedAt) === true) {
+  if (dateTimeUtil.isDurationPassed(token.CreatedAt) === true) {
     try {
       deleteToken = await tokenModel.deleteMany({
         UserId,

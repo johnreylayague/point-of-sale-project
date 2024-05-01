@@ -13,6 +13,7 @@ const auth = require("../../utils/shared/authUtil");
 const validateUtil = require("../../utils/shared/validateUtil_TBD");
 const bycryptUtil = require("../../utils/shared/bycryptUtil");
 const hardwareInfoUtil = require("../../utils/shared/hardwareInformationUtil");
+const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
 
 const signup = async (req, res, next) => {
   const {
@@ -32,18 +33,6 @@ const signup = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    const referenceData = await referenceModel.find({
-      Group: { $in: ["UserType", "RecordStatusType"] },
-    });
-    const UserType_Owner = referenceData.find(
-      (reference) =>
-        reference.Group === "UserType" && reference.Name === "Owner"
-    );
-    const RecordStatusType_Inactive = referenceData.find(
-      (reference) =>
-        reference.Group === "RecordStatusType" && reference.Name === "Inactive"
-    );
-
     createdAddress.CountryId = CountryId;
     await createdAddress.save({ session: sess });
 
@@ -59,8 +48,9 @@ const signup = async (req, res, next) => {
     createdUser.Timezone = Timezone;
     createdUser.Language = Language;
     createdUser.AddressId = createdAddress.id;
-    createdUser.UserType_ReferenceId = UserType_Owner.id;
-    createdUser.RecordStatusType_ReferenceId = RecordStatusType_Inactive.id;
+    createdUser.UserType_ReferenceId = referenceIdUtil.UserTypeOwner;
+    createdUser.RecordStatusType_ReferenceId =
+      referenceIdUtil.RecordStatusTypeInActive;
     await createdUser.save({ session: sess });
 
     await sess.commitTransaction();
@@ -118,13 +108,6 @@ const login = async (req, res, next) => {
     const computerUsername = "1";
     const motherboardSerialNumber = "1";
 
-    const referenceData = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-    const getUserTypeLogin = referenceData.find(
-      (reference) => reference.Name === "Login"
-    );
-
     createUserLog.Email = existingUser.Email;
     createUserLog.Password = existingUser.Password;
     createUserLog.Result = "Successfully Logged In";
@@ -133,7 +116,7 @@ const login = async (req, res, next) => {
     createUserLog.ComputerName = computerName;
     createUserLog.SystemUsername = computerUsername;
     createUserLog.MotherBoardInformation = motherboardSerialNumber;
-    createUserLog.ActionType_ReferenceId = getUserTypeLogin;
+    createUserLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeLogin;
     createUserLog.save();
   } catch (err) {
     const error = new HttpError(err, 500);

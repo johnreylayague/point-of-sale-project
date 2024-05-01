@@ -9,6 +9,7 @@ const categoryModel = require("../../models/category");
 const attachmentModel = require("../../models/attachment");
 const HttpError = require("../../models/http-error");
 const productsQuery = require("../../utils/aggregate/bo/bo-products-aggregate");
+const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
 
 const createProduct = async (req, res, next) => {
   const {
@@ -79,13 +80,6 @@ const createProduct = async (req, res, next) => {
     await createProduct.save({ session: sess });
 
     // activity log below
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionTypeCreate = references.find(
-      (reference) => reference.Name === "Create"
-    );
 
     product = { ...createProduct.toObject() };
     product.AttachmentId = createAttachment.toObject();
@@ -98,7 +92,7 @@ const createProduct = async (req, res, next) => {
     createActivityLog.FieldName = Object.keys(productModel.schema.paths);
     createActivityLog.OldValue = null;
     createActivityLog.NewValue = product;
-    createActivityLog.ActionType_ReferenceId = getActionTypeCreate.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeCreate;
 
     await createActivityLog.save({ session: sess });
 
@@ -225,14 +219,6 @@ const updatedProduct = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionTypeUpdate = references.find(
-      (reference) => reference.Name === "Update"
-    );
-
     createActivityLog.OldValue = product.toObject(); // get OldValue of product
 
     product.ProductDetailId.Name = Name;
@@ -265,7 +251,7 @@ const updatedProduct = async (req, res, next) => {
     createActivityLog.CollectionName = productModel.collection.name;
     createActivityLog.RecordId = productId;
     createActivityLog.FieldName = Object.keys(productModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionTypeUpdate.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeUpdate;
     createActivityLog.NewValue = product.toObject();
     await createActivityLog.save({ session: sess });
 
@@ -325,7 +311,7 @@ const deleteProduct = async (req, res, next) => {
     return next(error);
   }
 
-  if (product === null) {
+  if (!product) {
     const error = new HttpError("Product does not exist.", 404);
     return next(error);
   }
@@ -334,19 +320,11 @@ const deleteProduct = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionTypeDelete = references.find(
-      (reference) => reference.Name === "Delete"
-    );
-
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = productModel.collection.name;
     createActivityLog.RecordId = product.id;
     createActivityLog.FieldName = Object.keys(productModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionTypeDelete.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeDelete;
     createActivityLog.OldValue = product.toObject();
     createActivityLog.NewValue = null;
     await createActivityLog.save({ session: sess });

@@ -4,6 +4,7 @@ const categoryModel = require("../../models/category");
 const referenceModel = require("../../models/reference");
 const HttpError = require("../../models/http-error");
 const activityLogModel = require("../../models/activityLog");
+const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
 
 const createCategory = async (req, res, next) => {
   const { Name, RecordStatusType_ReferenceId } = req.body;
@@ -28,17 +29,13 @@ const createCategory = async (req, res, next) => {
       Group: { $in: ["ActionType"] },
     });
 
-    const getActionTypeCreate = references.find(
-      (reference) => reference.Name === "Create"
-    );
-
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = categoryModel.collection.name;
     createActivityLog.RecordId = createCategory.id;
     createActivityLog.FieldName = Object.keys(categoryModel.schema.paths);
     createActivityLog.OldValue = null;
     createActivityLog.NewValue = createCategory.toObject();
-    createActivityLog.ActionType_ReferenceId = getActionTypeCreate.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeCreate;
 
     await createActivityLog.save({ session: sess });
     await sess.commitTransaction();
@@ -104,7 +101,7 @@ const updateCategory = async (req, res, next) => {
     return next(error);
   }
 
-  if (category === null) {
+  if (!category) {
     const error = new HttpError("Category does not exist.", 404);
     return next(error);
   }
@@ -119,19 +116,11 @@ const updateCategory = async (req, res, next) => {
     category.RecordStatusType_ReferenceId = RecordStatusType_ReferenceId;
     category.save();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionTypeUpdate = references.find(
-      (reference) => reference.Name === "Update"
-    );
-
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = categoryModel.collection.name;
     createActivityLog.RecordId = category.id;
     createActivityLog.FieldName = Object.keys(categoryModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionTypeUpdate.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeUpdate;
     createActivityLog.NewValue = category.toObject();
 
     await createActivityLog.save({ session: sess });
@@ -166,7 +155,7 @@ const deleteCategory = async (req, res, next) => {
     return next(error);
   }
 
-  if (category === null) {
+  if (!category) {
     const error = new HttpError("Category does not exist.", 404);
     return next(error);
   }
@@ -175,19 +164,11 @@ const deleteCategory = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionTypeDelete = references.find(
-      (reference) => reference.Name === "Delete"
-    );
-
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = categoryModel.collection.name;
     createActivityLog.RecordId = category.id;
     createActivityLog.FieldName = Object.keys(categoryModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionTypeDelete.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeDelete;
     createActivityLog.OldValue = category.toObject();
     createActivityLog.NewValue = null;
     await createActivityLog.save({ session: sess });

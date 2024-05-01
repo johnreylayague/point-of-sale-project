@@ -1,14 +1,11 @@
 const mongoose = require("mongoose");
 
-const categoryModel = require("../../models/category");
-const referenceModel = require("../../models/reference");
-const userModel = require("../../models/user");
 const salesModel = require("../../models/sales");
 const productSoldModel = require("../../models/productSold");
 const activityLogModel = require("../../models/activityLog");
 const HttpError = require("../../models/http-error");
 const salesQuery = require("../../utils/aggregate/pos/pos-sales-aggregate");
-const referenceUtil = require("../../utils/shared/getReferenceIdUtil");
+const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
 
 const createSales = async (req, res, next) => {
   const { Products, PaymentTypeId, CashReceived, TotalPaid, Change } = req.body;
@@ -21,36 +18,20 @@ const createSales = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    const referenceData = await referenceUtil.getReference(
-      ["RecordStatusType", "ActionType"],
-      ["AC", "CRE"]
-    );
-
-    const create = referenceUtil.findReferenceId(
-      referenceData,
-      "ActionType",
-      "CRE"
-    );
-
-    const active = referenceUtil.findReferenceId(
-      referenceData,
-      "RecordStatusType",
-      "AC"
-    );
-
     createSales.PaymentTypeId = PaymentTypeId;
     createSales.CreatorId = userId;
     createSales.isVoid = false;
     createSales.CashReceived = CashReceived;
     createSales.TotalPaid = TotalPaid;
     createSales.Change = Change;
-    createSales.RecordStatusType_ReferenceId = active;
+    createSales.RecordStatusType_ReferenceId =
+      referenceIdUtil.RecordStatusTypeActive;
     await createSales.save({ session: sess });
 
     const modifiedProducts = Products.map((product) => ({
       ...product,
       SalesId: createSales.id,
-      RecordStatusType_ReferenceId: active,
+      RecordStatusType_ReferenceId: referenceIdUtil.RecordStatusTypeActive,
     }));
 
     await productSoldModel.create(modifiedProducts, {
@@ -66,7 +47,7 @@ const createSales = async (req, res, next) => {
     createActivityLog.CollectionName = createSales.collection.name;
     createActivityLog.RecordId = createSales.id;
     createActivityLog.FieldName = Object.keys(createSales.schema.paths);
-    createActivityLog.ActionType_ReferenceId = create;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeCreate;
     createActivityLog.OldValue = null;
     createActivityLog.NewValue = salesAndProductSold;
 
@@ -87,6 +68,7 @@ const getSales = async (req, res, next) => {
   const { userId } = req.userData;
 
   let sales;
+
   try {
     sales = await salesModel.aggregate(salesQuery.getSales(userId));
   } catch (err) {
@@ -108,51 +90,62 @@ const getSales = async (req, res, next) => {
 };
 
 const deleteSales = async (req, res, next) => {
-  const {} = req.body;
   const salesId = req.params.id;
   const { userId } = req.userData;
 
   const createSales = new salesModel();
   const createActivityLog = new activityLogModel();
 
-  let sales, productSold;
+  let sales;
+
+  try {
+    sales = await salesModel.findOne({ _id: salesId, CreatorId: userId });
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  if (!sales) {
+    const error = new HttpError("Sales does not exist.", 404);
+    return next(error);
+  }
+
+  let productSold;
+
+  try {
+    productSold = await productSoldModel.find({ SalesId: salesId });
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  if (!productSold.length) {
+    const error = new HttpError("Sold Product does not exist.", 404);
+    return next(error);
+  }
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
-
-    sales = await salesModel
-      .findOne({ _id: salesId, CreatorId: userId })
-      .lean();
-    productSold = await productSoldModel.find({ SalesId: salesId }).lean();
-
-    if (!sales || !productSold) {
-      const error = new HttpError("Sales does not exist.", 404);
-      return next(error);
-    }
-
-    const salesAndProductSold = {
-      ...sales,
-      productSold,
-    };
-
-    const create = await referenceUtil.getReferenceId("ActionType", "CRE");
 
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = createSales.collection.name;
     createActivityLog.RecordId = createSales.id;
     createActivityLog.FieldName = Object.keys(createSales.schema.paths);
-    createActivityLog.ActionType_ReferenceId = create;
-    createActivityLog.OldValue = null;
-    createActivityLog.NewValue = salesAndProductSold;
-
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeDelete;
+    createActivityLog.OldValue = {
+      ...sales,
+      productSold,
+    };
+    createActivityLog.NewValue = null;
     await createActivityLog.save({ session: sess });
 
-    await salesModel.deleteOne(
-      { _id: salesId, CreatorId: userId },
+    await sales.deleteOne({ session: sess });
+
+    await productSoldModel.deleteMany(
+      { _id: { $in: productSold.map((sold) => sold.id) }, SalesId: salesId },
       { session: sess }
     );
-
-    await productSoldModel.deleteMany({ SalesId: salesId }, { session: sess });
 
     await sess.commitTransaction();
   } catch (err) {

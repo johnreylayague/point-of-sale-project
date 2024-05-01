@@ -4,6 +4,7 @@ const menuModel = require("../../models/menu");
 const referenceModel = require("../../models/reference");
 const activityLogModel = require("../../models/activityLog");
 const HttpError = require("../../models/http-error");
+const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
 
 const getMenus = async (req, res, next) => {
   const menuId = req.params.id;
@@ -103,13 +104,6 @@ const createMenu = async (req, res, next) => {
     await createMenu.save({ session: sess });
 
     // activity log below
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionType = references.find(
-      (reference) => reference.Name === "Create"
-    );
 
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = menuModel.collection.name;
@@ -117,7 +111,7 @@ const createMenu = async (req, res, next) => {
     createActivityLog.FieldName = Object.keys(menuModel.schema.paths);
     createActivityLog.OldValue = null;
     createActivityLog.NewValue = createMenu.toObject();
-    createActivityLog.ActionType_ReferenceId = getActionType.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeCreate;
     await createActivityLog.save({ session: sess });
 
     await sess.commitTransaction();
@@ -159,14 +153,6 @@ const updateMenu = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionType = references.find(
-      (reference) => reference.Name === "Update"
-    );
-
     createActivityLog.OldValue = menu.toObject();
 
     menu.Name = Name;
@@ -180,7 +166,7 @@ const updateMenu = async (req, res, next) => {
     createActivityLog.CollectionName = menuModel.collection.name;
     createActivityLog.RecordId = menu.id;
     createActivityLog.FieldName = Object.keys(menuModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionType.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeUpdate;
     createActivityLog.NewValue = menu.toObject();
     await createActivityLog.save({ session: sess });
 
@@ -221,19 +207,11 @@ const deletedMenu = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
-
-    const getActionType = references.find(
-      (reference) => reference.Name === "Delete"
-    );
-
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = menuModel.collection.name;
     createActivityLog.RecordId = menu.id;
     createActivityLog.FieldName = Object.keys(menuModel.schema.paths);
-    createActivityLog.ActionType_ReferenceId = getActionType.id;
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeDelete;
     createActivityLog.OldValue = menu;
     createActivityLog.NewValue = null;
 

@@ -1,35 +1,62 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+// import RootLayout from "./shared/layout/Body/Root";
+// import SalesPage from "./pos/sales/pages/Sales";
+// import ItemsPage from "./pos/items/pages/Items";
+// import CategoriesPage from "./pos/items/pages/Categories";
+// import ErrorPage from "./shared/error/pages/Error";
+// import ItemsRootLayout from "./pos/items/pages/ItemsRootLayout";
+import RootLayout from "./shared/layout/Main/pages/RootLayout";
+import ErrorPage from "./shared/layout/Error/pages/Error";
+
+import BackOfficeRootLayout from "./bo/root/pages/RootLayout";
+import LoginPage from "./bo/login/pages/Login"; // action as loginUserAction,
+import ResetPasswordPage from "./bo/resetPassword/pages/ResetPassword";
+import ForgotPasswordPage from "./bo/forgotPassword/pages/ForgotPassword";
+import SignUpPage from "./bo/signUp/pages/SignUp";
+
+import POSRootLayout from "./pos/pages/root/pages/RootLayout";
+import SalesPage from "./pos/pages/sales/pages/Sales";
+import ItemsPage from "./pos/pages/items/pages/Items";
+
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <RootLayout />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <SalesPage />,
+        },
+        {
+          path: "bo",
+          element: <BackOfficeRootLayout />,
+          children: [
+            {
+              path: "login",
+              element: <LoginPage />,
+            },
+            {
+              path: "signup",
+              element: <SignUpPage />,
+            },
+            {
+              path: "resetpassword/:token",
+              element: <ResetPasswordPage />,
+            },
+            {
+              path: "forgotpassword",
+              element: <ForgotPasswordPage />,
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+  return <RouterProvider router={router}></RouterProvider>;
 }
 
-export default App
+export default App;

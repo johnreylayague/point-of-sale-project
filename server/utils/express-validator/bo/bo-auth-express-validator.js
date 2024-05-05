@@ -35,6 +35,14 @@ const loginForm = () => [
       if (!existingUser) {
         const createUserLog = new userLogModel();
 
+        let hashedPassword;
+        try {
+          hashedPassword = await bcrypt.hash(Password, 12);
+        } catch (err) {
+          const error = new HttpError(err, 500);
+          return next(error);
+        }
+
         try {
           const localIpAddress = await hardwareInfoUtil.getLocalIpAddress();
           const publicIpAddress = await hardwareInfoUtil.getPublicIpAddress();
@@ -44,7 +52,7 @@ const loginForm = () => [
             await hardwareInfoUtil.getMotherboardSerialNumber();
 
           createUserLog.Email = Email;
-          createUserLog.Password = Password;
+          createUserLog.Password = hashedPassword;
           createUserLog.Result = `${path} does not exist.`;
           createUserLog.LocalIpAddress = localIpAddress;
           createUserLog.PublicIpAddress = publicIpAddress;
@@ -63,7 +71,7 @@ const loginForm = () => [
 
   check("Password")
     .exists()
-    .withMessage((value, { path }) => `${path} field is required`)
+    .withMessage((value, { path }) => `${path} exist field is required`)
     .bail()
     .trim()
     .customSanitizer((value) => {
@@ -74,7 +82,6 @@ const loginForm = () => [
     .bail()
     .custom(async (value, { req, path }) => {
       const { Password, Email } = req.body;
-
       let existingUser, isValidPassword;
 
       try {

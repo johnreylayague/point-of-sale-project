@@ -187,31 +187,31 @@ const forgotPassword = async (req, res, next) => {
       return next(error);
     }
 
-    // // start of send email /w token
-    // try {
-    //   const transporter = nodemailer.createTransport({
-    //     host: process.env.EMAIL_HOST,
-    //     port: 465,
-    //     secure: true, // Use `true` for port 465, `false` for all other ports
-    //     auth: {
-    //       user: process.env.Email,
-    //       pass: process.env.Password,
-    //     },
-    //   });
+    // start of send email /w token
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: 465,
+        secure: true, // Use `true` for port 465, `false` for all other ports
+        auth: {
+          user: process.env.Email,
+          pass: process.env.Password,
+        },
+      });
 
-    //   const mailOptions = {
-    //     from: "do-not-reply@gmail.com",
-    //     to: user.Email,
-    //     subject: "Password Reset",
-    //     text: `Click the following link to reset your password: ${process.env.RESET_PASSWORD_URL}/${resetToken}`,
-    //   };
-    //   const info = await transporter.sendMail(mailOptions);
-    //   console.log("Message sent: %s", info.messageId);
-    // } catch (err) {
-    //   const error = new HttpError(err, 404);
-    //   return next(error);
-    // }
-    // // end of send email /w token
+      const mailOptions = {
+        from: "do-not-reply@gmail.com",
+        to: user.Email,
+        subject: "Password Reset",
+        text: `Click the following link to reset your password: ${process.env.RESET_PASSWORD_URL}/${resetToken}`,
+      };
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Message sent: %s", info.messageId);
+    } catch (err) {
+      const error = new HttpError(err, 404);
+      return next(error);
+    }
+    // end of send email /w token
   }
 
   res.status(200).json({

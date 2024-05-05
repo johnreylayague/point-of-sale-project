@@ -7,7 +7,7 @@ const expressValidatorCountries = require("../../utils/express-validator/bo/bo-c
 
 const router = express.Router();
 
-router.use(checkAuth);
+// router.use(checkAuth);
 
 router.get(
   "/:code?",

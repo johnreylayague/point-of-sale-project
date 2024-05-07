@@ -1,163 +1,169 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchCountries, signupUser } from "../../../shared/services/api";
+import { useForm } from "react-hook-form";
+import { validateSignUp } from "../../../shared/util/validationUtil";
 
 export default function SignUp() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState({});
-  const [error, setError] = useState("");
-  const [succes, setSuccess] = useState({});
   const [countries, setCountries] = useState([]);
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+  } = useForm({
+    defaultValues: {
+      Email: "",
+      Password: "",
+      BusinessName: "",
+      Country: "",
+    },
+  });
+
+  const onSubmit = async (data) => {
+    try {
+      const { response, status } = await signupUser(data);
+
+      if (status === 422) {
+        response.errors.map((error) => {
+          setError(error.path, {
+            type: "fieldErrorMessage",
+            message: error.msg,
+          });
+        });
+      }
+
+      if (status === 200) {
+        reset();
+      }
+    } catch (error) {
+      setError("serverError", {
+        type: "serverErrorMessage",
+        message: error.message || "Someting went wrong.",
+      });
+    }
+  };
 
   useEffect(() => {
     async function getCountries() {
       try {
         const countriesData = await fetchCountries();
-        setCountries((prevCountries) => {
-          return [...prevCountries, ...countriesData.data.countries.country];
-        });
+        setCountries(countriesData.data.countries.country);
       } catch (error) {
-        throw error;
+        setError("serverError", {
+          type: "serverErrorMessage",
+          message: error.message || "Someting went wrong.",
+        });
       }
     }
     getCountries();
   }, []);
 
-  const submitHandler = async (event) => {
-    event.preventDefault();
-    const fd = new FormData(event.target);
-    const data = Object.fromEntries(fd.entries());
-
-    setIsLoading(true);
-    try {
-      const signupUserData = await signupUser(data);
-
-      setIsLoading(false);
-
-      if (signupUserData.errors) {
-        setErrorMessage((prevError) => {
-          const emptyValues = {
-            Email: null,
-            Password: null,
-            BusinessName: null,
-            CountryId: null,
-          };
-
-          const errorsObject = signupUserData.errors.reduce((acc, curr) => {
-            acc[curr.path] = curr.msg;
-            return acc;
-          }, {});
-
-          const newData = { ...emptyValues, ...errorsObject };
-
-          return { ...prevError, ...newData };
-        });
-      }
-
-      if (signupUserData.token) {
-        setErrorMessage({});
-
-        setSuccess((prevData) => {
-          return { ...prevData, ...signupUserData };
-        });
-
-        event.target.reset();
-      }
-    } catch (err) {
-      setError(err.message || "Something wehnt wrong.");
-    }
-    setIsLoading(false);
-  };
   return (
-    <form
-      onSubmit={submitHandler}
-      method="post"
-      style={{ width: "150px", maxWidth: "1200px", margin: "0 auto" }}
-    >
-      {error && <p style={{ color: "red" }}> Error : {error}</p>}
-      <fieldset>
-        <input
-          type="text"
-          name="Currency"
-          id="Currency"
-          hidden
-          defaultValue={"atat"}
-        />
-        <input
-          type="text"
-          name="Timezone"
-          id="Timezone"
-          hidden
-          defaultValue={"atat"}
-        />
-        <input
-          type="text"
-          name="Language"
-          id="Language"
-          hidden
-          defaultValue={"atat"}
-        />
-        <legend>Sign Up</legend>
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          name="Email"
-          id="Email"
-          autoComplete="email"
-          style={{ marginBottom: "5px" }}
-          defaultValue="jay@gmail.com"
-        />
+    <>
+      {isSubmitSuccessful && (
+        <p style={{ textAlign: "center" }}>Form submitted successfully!</p>
+      )}
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        method="post"
+        style={{ width: "150px", maxWidth: "1200px", margin: "0 auto" }}
+      >
+        {errors.serverError && <p>{errors.serverError.message}</p>}
 
-        {errorMessage && errorMessage.Email && (
-          <p style={{ color: "red" }}>{errorMessage.Email}</p>
-        )}
+        <fieldset>
+          <input
+            {...register("Currency", { ...validateSignUp.Currency })}
+            type="text"
+            name="Currency"
+            id="Currency"
+            hidden
+            defaultValue={"atat"}
+          />
+          <input
+            type="text"
+            name="Timezone"
+            id="Timezone"
+            hidden
+            defaultValue={"atat"}
+            {...register("Timezone", { ...validateSignUp.Timezone })}
+          />
+          <input
+            type="text"
+            name="Language"
+            id="Language"
+            hidden
+            defaultValue={"atat"}
+            {...register("Language", { ...validateSignUp.Language })}
+          />
+          <legend>Sign Up</legend>
+          <label htmlFor="email">Email</label>
+          <input
+            {...register("Email", { ...validateSignUp.Email })}
+            type="email"
+            name="Email"
+            id="Email"
+            autoComplete="email"
+            style={{ marginBottom: "5px" }}
+          />
+          {errors.Email && <p>{errors.Email.message}</p>}
+          <br />
+          <label htmlFor="password">Password</label>
+          <input
+            {...register("Password", { ...validateSignUp.Password })}
+            type="password"
+            name="Password"
+            id="Password"
+            autoComplete="current-password"
+          />
+          {errors.Password && <p>{errors.Password.message}</p>}
+          <br />
+          <label htmlFor="BusinessName">Business Name</label>
+          <input
+            {...register("BusinessName", { ...validateSignUp.BusinessName })}
+            type="text"
+            name="BusinessName"
+            id="BusinessName"
+          />
+          {errors.BusinessName && <p>{errors.BusinessName.message}</p>}
 
-        <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          name="Password"
-          id="Password"
-          autoComplete="current-password"
-        />
-        {errorMessage && errorMessage.Password && (
-          <p style={{ color: "red" }}>{errorMessage.Password}</p>
-        )}
+          <br />
+          <label htmlFor="CountryId">Country</label>
+          <select
+            {...register("CountryId", { ...validateSignUp.CountryId })}
+            onChange={(e) => setValue("CountryId", e.target.value)}
+            name="CountryId"
+            id="CountryId"
+          >
+            <option value="">Select</option>
+            {countries &&
+              countries.map((country, index) => (
+                <option key={index} value={country.population}>
+                  {country.continentName}
+                </option>
+              ))}
+          </select>
+          {errors.CountryId && <p>{errors.CountryId.message}</p>}
 
-        <label htmlFor="BusinessName">Business Name</label>
-        <input type="text" name="BusinessName" id="BusinessName" />
-        {errorMessage && errorMessage.BusinessName && (
-          <p style={{ color: "red" }}>{errorMessage.BusinessName}</p>
-        )}
-
-        <label htmlFor="CountryId">Country</label>
-        <select name="CountryId" id="CountryId" defaultValue="select">
-          <option value="">Select</option>
-          {countries &&
-            countries.map((country, index) => (
-              <option key={index} value={index}>
-                {country.continentName}
-              </option>
-            ))}
-        </select>
-        {errorMessage && errorMessage.CountryId && (
-          <p style={{ color: "red" }}>{errorMessage.CountryId}</p>
-        )}
-
-        <button
-          name="btnLogin"
-          id="btnLogin"
-          type="submit"
-          style={{
-            display: "block",
-            marginTop: "15px",
-            marginBottom: "5px",
-          }}
-          disabled={isLoading ?? true}
-        >
-          {isLoading ? "Loading..." : "Signup"}
-        </button>
-        <Link to={"/bo/login"}>Login</Link>
-      </fieldset>
-    </form>
+          <button
+            name="btnLogin"
+            id="btnLogin"
+            type="submit"
+            style={{
+              display: "block",
+              marginTop: "15px",
+              marginBottom: "5px",
+            }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Loading..." : "Signup"}
+          </button>
+          <Link to={"/bo/login"}>Login</Link>
+        </fieldset>
+      </form>
+    </>
   );
 }

@@ -1,2 +1,3 @@
 npm install react-router-dom
-npm install dotenv
+npm install react-hook-form
+npm install dompurify

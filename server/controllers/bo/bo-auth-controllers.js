@@ -234,7 +234,7 @@ const resetPassword = async (req, res, next) => {
   }
 
   if ((token && token.UserId.Email !== Email) || !token) {
-    const error = new HttpError("Invalid or expired token", 422);
+    const error = new HttpError("Invalid or expired token", 401);
     return next(error);
   }
 
@@ -253,7 +253,7 @@ const resetPassword = async (req, res, next) => {
       return next(error);
     }
 
-    const error = new HttpError("Invalid or expired token", 422);
+    const error = new HttpError("Invalid or expired token", 401);
     return next(error);
   }
 

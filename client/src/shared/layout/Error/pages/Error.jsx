@@ -1,5 +1,5 @@
 import React from "react";
-import { useRouteError } from "react-router-dom";
+import { useRouteError, Link } from "react-router-dom";
 
 export default function Error() {
   const error = useRouteError();
@@ -22,6 +22,7 @@ export default function Error() {
       <p style={{ color: "red", fontSize: "19px", fontWeight: "bold" }}>
         {message}
       </p>
+      <Link to="/bo/login">Go Back to Login</Link>
     </>
   );
 }

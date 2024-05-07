@@ -1,73 +1,65 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { forgotPasswordUser } from "../../../shared/services/api";
+import { useForm } from "react-hook-form";
+import { validateForgotPassword } from "../../../shared/util/validationUtil";
 
 export default function ForgotPassword() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [errorMessage, setErrorMessage] = useState({});
-  const [success, setSuccess] = useState("");
+  const [responseData, setResponseData] = useState("");
 
-  const submitHandler = async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData);
-    setIsLoading(true);
+  const {
+    setError,
+    handleSubmit,
+    register,
+    reset,
+    formState: { isSubmitting, errors },
+  } = useForm({ defaultValues: { Email: "" } });
+
+  const onSubmit = async (data) => {
     try {
-      const userData = await forgotPasswordUser(data);
-      if (userData.errors) {
-        setErrorMessage((prevError) => {
-          const emptyValues = {
-            Email: null,
-          };
-
-          const errorsObject = userData.errors.reduce((acc, curr) => {
-            acc[curr.path] = curr.msg;
-            return acc;
-          }, {});
-
-          const newData = { ...emptyValues, ...errorsObject };
-
-          return { ...prevError, ...newData };
+      const { response, status } = await forgotPasswordUser(data);
+      if (status == 422) {
+        response.errors.map((error) => {
+          setError(error.path, {
+            type: "fieldErrorMessage",
+            message: error.msg,
+          });
         });
       }
 
-      if (userData.message) {
-        setSuccess((prevMessage) => {
-          return { ...prevMessage, message: userData.message };
-        });
-        const resultMessage = setTimeout(() => setSuccess(""), 1500);
-
-        event.target.reset();
+      if (status == 200) {
+        setResponseData(response.message);
+        reset();
       }
     } catch (error) {
-      setError(error.message || "Something went wrong.");
+      setError("serverError", {
+        type: "serverErrorMessage",
+        message: error.message || "Someting went wrong.",
+      });
     }
-    setIsLoading(false);
   };
 
   return (
     <>
       <form
-        onSubmit={submitHandler}
+        onSubmit={handleSubmit(onSubmit)}
         method="post"
         style={{ width: "150px", maxWidth: "1200px", margin: "0 auto" }}
       >
-        {success && success.message && (
-          <p style={{ color: "green" }}>{success.message}</p>
-        )}
-        {error && <p style={{ color: "red" }}> Error : {error}</p>}
+        {responseData && <p>{responseData}</p>}
+        {errors.serverError && <p>{errors.serverError.message}</p>}
+
         <fieldset>
           <label htmlFor="password">Email :</label>
           <input
+            {...register("Email", { ...validateForgotPassword.Email })}
             type="email"
             name="Email"
             id="Email"
             autoComplete="current-email"
           />
-          {errorMessage && errorMessage.Email && (
-            <p style={{ color: "red" }}>{errorMessage.Email}</p>
-          )}
+          {errors.Email && <p>{errors.Email.message}</p>}
+
           <button
             name="btnLogin"
             id="btnLogin"
@@ -76,10 +68,10 @@ export default function ForgotPassword() {
               marginTop: "15px",
               marginBottom: "5px",
             }}
-            disabled={isLoading && true}
+            disabled={isSubmitting}
             type="submit"
           >
-            {isLoading ? "Submitting..." : "Submit"}
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
 
           <Link to={"../login"}>Login</Link>

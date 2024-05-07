@@ -1,94 +1,101 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { resetPasswordUser } from "../../../shared/services/api";
+import { useForm } from "react-hook-form";
+import { validateResetPassword } from "../../../shared/util/validationUtil";
 
 export default function ResetPassword() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState({});
-  const [error, setError] = useState("");
-  const [succes, setSuccess] = useState("");
+  const [responseData, setResponseData] = useState("");
+  const {
+    setError,
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      Email: "",
+      ConfirmPassword: "",
+      Password: "",
+    },
+  });
 
-  const navigate = useNavigate();
   const params = useParams();
 
-  const submitHandler = async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData);
+  const onSubmit = async (data) => {
+    const token = params.token;
 
     try {
-      const resetPasswordData = await resetPasswordUser(data, params.token);
-      if (resetPasswordData.errors) {
-        setErrorMessage((prevError) => {
-          const emptyValues = {
-            Email: null,
-            Password: null,
-            ConfirmPassword: null,
-          };
-
-          const errorsObject = resetPasswordData.errors.reduce((acc, curr) => {
-            acc[curr.path] = curr.msg;
-            return acc;
-          }, {});
-
-          const newData = { ...emptyValues, ...errorsObject };
-
-          return { ...prevError, ...newData };
+      const { response, status } = await resetPasswordUser(data, token);
+      if (status === 422) {
+        response.errors.map((error) => {
+          setError(error.path, {
+            type: "fieldErrorMessage",
+            message: error.msg,
+          });
         });
       }
-      if (resetPasswordData.message) {
-        setErrorMessage({});
-        setSuccess(resetPasswordData.message);
-        const resultMessage = setTimeout(() => setSuccess(""), 1500);
-        event.target.reset();
+
+      if (status === 200 || status === 401) {
+        reset();
+        setResponseData(response.message);
+        setTimeout(() => setResponseData(""), 3000);
       }
     } catch (error) {
-      setError(error.message || "Something went wrong.");
+      setError("serverError", {
+        type: "serverErrorMessage",
+        message: error.message || "Someting went wrong.",
+      });
     }
   };
 
   return (
     <>
       <form
-        onSubmit={submitHandler}
+        onSubmit={handleSubmit(onSubmit)}
         method="post"
         style={{ width: "150px", maxWidth: "1200px", margin: "0 auto" }}
       >
-        {succes && <p style={{ color: "green" }}>{succes}</p>}
-        {error && <p style={{ color: "red" }}> Error : {error}</p>}
+        {responseData && <p>{responseData}</p>}
+        {errors.serverError && <p>{errors.serverError.message}</p>}
         <fieldset>
           <label htmlFor="password">Email :</label>
           <input
+            {...register("Email", {
+              ...validateResetPassword.Email,
+            })}
             type="email"
             name="Email"
             id="Email"
             autoComplete="current-email"
           />
-          {errorMessage && errorMessage.Email && (
-            <p style={{ color: "red" }}>{errorMessage.Email}</p>
-          )}
+          {errors.Email && <p>{errors.Email.message}</p>}
 
           <label htmlFor="password">Password :</label>
           <input
+            {...register("Password", {
+              ...validateResetPassword.Password,
+            })}
             type="password"
             name="Password"
             id="Password"
             autoComplete="current-password"
           />
-          {errorMessage && errorMessage.Password && (
-            <p style={{ color: "red" }}>{errorMessage.Password}</p>
-          )}
+          {errors.Password && <p>{errors.Password.message}</p>}
 
           <label htmlFor="password">Confirm Password :</label>
           <input
+            {...register("ConfirmPassword", {
+              ...validateResetPassword.ConfirmPassword,
+              validate: (value) =>
+                value === Password || "Password do not match.",
+            })}
             type="password"
             name="ConfirmPassword"
             id="ConfirmPassword"
             autoComplete="current-password"
           />
-          {errorMessage && errorMessage.ConfirmPassword && (
-            <p style={{ color: "red" }}>{errorMessage.ConfirmPassword}</p>
-          )}
+          {errors.ConfirmPassword && <p>{errors.ConfirmPassword.message}</p>}
 
           <button
             name="btnLogin"
@@ -98,10 +105,10 @@ export default function ResetPassword() {
               marginTop: "15px",
               marginBottom: "5px",
             }}
-            disabled={isLoading && true}
+            disabled={isSubmitting}
             type="submit"
           >
-            {isLoading ? "Submitting..." : "Submit"}
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
 
           <Link to={"../login"}>Login</Link>

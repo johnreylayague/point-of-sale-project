@@ -11,14 +11,16 @@ export async function loginUser(data) {
 
   const responseData = await response.json();
 
-  if (!response.ok) {
-    throw new Error(JSON.stringify(responseData));
+  if (response.status === 422 || response.status === 200) {
+    return { response: responseData, status: response.status };
   }
 
-  return responseData;
+  if (!response.ok) {
+    throw new Error("Could not login.");
+  }
 }
 
-export async function fetchCountries(data) {
+export async function fetchCountries() {
   const url = `${import.meta.env.VITE_BACKEND_URL}/v1/countries`;
 
   const response = await fetch(url);
@@ -46,7 +48,7 @@ export async function signupUser(data) {
   const responseData = await response.json();
 
   if (response.status === 422 || response.status === 201) {
-    return responseData;
+    return { response: responseData, status: response.status };
   }
 
   if (!response.ok) {
@@ -68,7 +70,7 @@ export async function forgotPasswordUser(data) {
   const responseData = await response.json();
 
   if (response.status === 422 || response.status === 200) {
-    return responseData;
+    return { response: responseData, status: response.status };
   }
 
   if (!response.ok) {
@@ -91,8 +93,12 @@ export async function resetPasswordUser(data, token) {
 
   const responseData = await response.json();
 
-  if (response.status === 422 || response.status === 200) {
-    return responseData;
+  if (
+    response.status === 422 ||
+    response.status === 401 ||
+    response.status === 200
+  ) {
+    return { response: responseData, status: response.status };
   }
 
   if (!response.ok) {

@@ -14,7 +14,7 @@ const activityLog = new Schema({
     default: Date.now,
   },
   CollectionName: { type: String, required: true },
-  RecordId: { type: mongoose.Types.ObjectId, required: true },
+  RecordId: { type: [String], required: true },
   FieldName: { type: [String], required: true },
   OldValue: { type: Object, default: null },
   NewValue: { type: Object, default: null },

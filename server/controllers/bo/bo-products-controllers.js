@@ -6,6 +6,10 @@ const productDetailModel = require("../../models/productDetail");
 const inventoryModel = require("../../models/inventory");
 const referenceModel = require("../../models/reference");
 const categoryModel = require("../../models/category");
+const soldByOptionModel = require("../../models/soldByOption");
+const colorModel = require("../../models/color");
+const shapeModel = require("../../models/shape");
+const representationModel = require("../../models/representation");
 const attachmentModel = require("../../models/attachment");
 const HttpError = require("../../models/http-error");
 const productsQuery = require("../../utils/aggregate/bo/bo-products-aggregate");
@@ -28,7 +32,6 @@ const createProduct = async (req, res, next) => {
     ColorId,
     Image,
     RepresentationId,
-    RecordStatusType_ReferenceId,
   } = req.body;
   const { userId } = req.userData;
 
@@ -38,7 +41,8 @@ const createProduct = async (req, res, next) => {
   const createActivityLog = new activityLogModel();
   const createProduct = new productModel();
 
-  let product;
+  let product,
+    RecordStatusType_ReferenceId = referenceIdUtil.RecordStatusTypeActive;
 
   try {
     const sess = await mongoose.startSession();
@@ -110,10 +114,10 @@ const createProduct = async (req, res, next) => {
     Description,
     SKU,
     BarCode,
-    Price,
-    Cost,
+    Price: { $numberDecimal: Price },
+    Cost: { $numberDecimal: Cost },
     Image,
-    TrackStock,
+    TrackStock: JSON.parse(TrackStock),
     InStock,
     LowStock,
     SoldByOptionId,
@@ -240,7 +244,8 @@ const updatedProduct = async (req, res, next) => {
     product.ColorId = ColorId;
 
     product.RepresentationId = RepresentationId;
-    product.RecordStatusType_ReferenceId = RecordStatusType_ReferenceId;
+    product.RecordStatusType_ReferenceId =
+      referenceIdUtil.RecordStatusTypeActive;
 
     await product.save({ session: sess });
     await product.ProductDetailId.save({ session: sess });
@@ -269,8 +274,8 @@ const updatedProduct = async (req, res, next) => {
     Description,
     SKU,
     BarCode,
-    Price,
-    Cost,
+    Price: { $numberDecimal: Price },
+    Cost: { $numberDecimal: Cost },
     Image,
     TrackStock,
     InStock,
@@ -298,7 +303,7 @@ const deleteProduct = async (req, res, next) => {
 
   const createActivityLog = new activityLogModel();
 
-  let product;
+  let product, data;
 
   try {
     product = await productModel
@@ -329,24 +334,152 @@ const deleteProduct = async (req, res, next) => {
     createActivityLog.NewValue = null;
     await createActivityLog.save({ session: sess });
 
-    await product.ProductDetailId.deleteOne({
-      session: sess,
-    });
-    await product.InventoryId.deleteOne({ session: sess });
-    await product.AttachmentId.deleteOne({ session: sess });
+    if (product.ProductDetailId) {
+      await product.ProductDetailId.deleteOne({
+        session: sess,
+      });
+    }
+
+    if (product.InventoryId) {
+      await product.InventoryId.deleteOne({ session: sess });
+    }
+
+    if (product.AttachmentId) {
+      await product.AttachmentId.deleteOne({ session: sess });
+    }
+
     await product.deleteOne({ session: sess });
+
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(err, 500);
     return next(error);
   }
 
+  data = product.toObject({ getters: true });
+
   res.status(200).json({
     message: "sucessfully deleted records",
+    data,
+  });
+};
+
+const deleteGroupProduct = async (req, res, next) => {
+  const { deleteProducts } = req.body;
+  const { userId } = req.userData;
+
+  const productIds = deleteProducts.reduce((acc, product) => {
+    acc.push(product.id);
+    return acc;
+  }, []);
+
+  const createActivityLog = new activityLogModel();
+
+  let products, data;
+  try {
+    products = await productModel
+      .find({
+        CreatorId: userId,
+        _id: {
+          $in: productIds,
+        },
+      })
+      .populate("ProductDetailId")
+      .populate("InventoryId")
+      .populate("AttachmentId");
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+
+    const { ProductId, AttachmentId, InventoryId, ProductDetailId } =
+      products.reduce(
+        (acc, product) => {
+          acc.ProductId.push(product._id);
+          acc.AttachmentId.push(product.AttachmentId);
+          acc.InventoryId.push(product.InventoryId);
+          acc.ProductDetailId.push(product.ProductDetailId);
+          return acc;
+        },
+        {
+          ProductId: [],
+          AttachmentId: [],
+          InventoryId: [],
+          ProductDetailId: [],
+        }
+      );
+
+    const options = { session: sess };
+
+    await productModel.deleteMany({ _id: { $in: ProductId } }, options);
+
+    await productDetailModel.deleteMany(
+      { _id: { $in: ProductDetailId } },
+      options
+    );
+
+    await inventoryModel.deleteMany({ _id: { $in: InventoryId } }, options);
+
+    await attachmentModel.deleteMany({ _id: { $in: AttachmentId } }, options);
+
+    products = products.map((product) => product.toObject({ getters: true }));
+
+    createActivityLog.CreatorId = userId;
+    createActivityLog.CollectionName = productModel.collection.name;
+    createActivityLog.RecordId = productIds;
+    createActivityLog.FieldName = Object.keys(productModel.schema.paths);
+    createActivityLog.ActionType_ReferenceId = referenceIdUtil.ActionTypeDelete;
+    createActivityLog.OldValue = products;
+    createActivityLog.NewValue = null;
+    await createActivityLog.save(options);
+
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  const total = products.length;
+
+  data = products;
+
+  res.status(200).json({
+    message: "sucessfully deleted records",
+    total,
+    data,
+  });
+};
+
+const updateProductCategory = async (req, res, next) => {
+  const categoryId = req.params.categoryId;
+  const productId = req.params.productId;
+  const userId = req.userData.userId;
+
+  let product;
+  try {
+    product = await productModel.findOne({ CreatorId: userId, _id: productId });
+    product.CategoryId = categoryId || null;
+    await product.save();
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  data = product.toObject({ getters: true });
+
+  res.status(200).json({
+    message: "sucessfully updated records",
+    data,
   });
 };
 
 exports.deleteProduct = deleteProduct;
 exports.createProduct = createProduct;
 exports.getProducts = getProducts;
+exports.updateProductCategory = updateProductCategory;
 exports.updatedProduct = updatedProduct;
+exports.deleteGroupProduct = deleteGroupProduct;

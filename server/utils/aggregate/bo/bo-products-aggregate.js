@@ -92,4 +92,69 @@ const getProducts = (userId) => [
   },
 ];
 
+const getProductDetail = (userId) => [
+  {
+    $lookup: {
+      from: "products",
+      let: { productDetailId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$ProductDetailId", "$$productDetailId"] },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            CreatorId: 1,
+          },
+        },
+      ],
+      as: "products",
+    },
+  },
+  {
+    $project: {
+      _id: 1,
+      SKU: 1,
+      Name: 1,
+      BarCode: 1,
+      Description: 1,
+      RecordStatusType_ReferenceId: 1,
+      CreatorId: {
+        $first: {
+          $cond: {
+            if: {
+              $eq: [{ $size: "$products.CreatorId" }, 0],
+            },
+            then: null,
+            else: "$products.CreatorId",
+          },
+        },
+      },
+      ProductId: {
+        $first: {
+          $cond: {
+            if: {
+              $eq: [{ $size: "$products._id" }, 0],
+            },
+            then: null,
+            else: "$products._id",
+          },
+        },
+      },
+      __v: 1,
+      id: "$_id",
+    },
+  },
+  {
+    $match: {
+      $expr: {
+        $eq: ["$CreatorId", { $toObjectId: userId }],
+      },
+    },
+  },
+];
+
 exports.getProducts = getProducts;
+exports.getProductDetail = getProductDetail;

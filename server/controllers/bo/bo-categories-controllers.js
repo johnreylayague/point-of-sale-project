@@ -1,33 +1,72 @@
 const mongoose = require("mongoose");
 
 const categoryModel = require("../../models/category");
-const referenceModel = require("../../models/reference");
+const colorModel = require("../../models/color");
 const HttpError = require("../../models/http-error");
 const activityLogModel = require("../../models/activityLog");
 const referenceIdUtil = require("../../utils/shared/referenceIdUtil");
+const categoryQuery = require("../../utils/aggregate/bo/bo-categories-aggregate");
+
+const getCategoriesProductColors = async (req, res, next) => {
+  const categoryId = req.params.id;
+  const searchTerm = req.query.search;
+  const { userId } = req.userData;
+
+  let categories;
+
+  try {
+    const query = categoryQuery.getCategory(userId);
+
+    if (searchTerm && !categoryId) {
+      query.push({
+        $match: {
+          $or: [{ Name: { $regex: searchTerm, $options: "i" } }],
+        },
+      });
+    }
+
+    if (categoryId && !searchTerm) {
+      query.push({
+        $match: {
+          $expr: { $eq: ["$_id", { $toObjectId: categoryId }] },
+        },
+      });
+    }
+
+    categories = await categoryModel.aggregate(query);
+  } catch (err) {
+    const error = new HttpError(err, 500);
+    return next(error);
+  }
+
+  const data = categories;
+
+  const total = categories.length;
+
+  res.status(200).json({
+    message: "sucessfully retrieved records",
+    total,
+    data,
+  });
+};
 
 const createCategory = async (req, res, next) => {
-  const { Name, RecordStatusType_ReferenceId } = req.body;
+  const { Name, ColorId } = req.body;
   const { userId } = req.userData;
 
   const createCategory = new categoryModel();
   const createActivityLog = new activityLogModel();
-
-  let category;
 
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
 
     createCategory.Name = Name;
-    createCategory.RecordStatusType_ReferenceId = RecordStatusType_ReferenceId;
+    createCategory.RecordStatusType_ReferenceId =
+      referenceIdUtil.RecordStatusTypeActive;
     createCategory.CreatorId = userId;
+    createCategory.ColorId = ColorId;
     await createCategory.save({ session: sess });
-
-    // activity log below
-    references = await referenceModel.find({
-      Group: { $in: ["ActionType"] },
-    });
 
     createActivityLog.CreatorId = userId;
     createActivityLog.CollectionName = categoryModel.collection.name;
@@ -44,11 +83,11 @@ const createCategory = async (req, res, next) => {
     return next(error);
   }
 
-  category = createCategory.toObject({ getters: true });
+  const data = createCategory.toObject({ getters: true });
 
   res.status(201).json({
-    message: "sucessfully retrieved records",
-    data: category,
+    message: "sucessfully created records",
+    data,
   });
 };
 
@@ -60,30 +99,43 @@ const getCategories = async (req, res, next) => {
   let categories;
 
   try {
-    let query = { CreatorId: userId };
+    const query = categoryQuery.getCategory(userId);
+
     if (searchTerm && !categoryId) {
-      query = { Name: { $regex: searchTerm, $options: "i" } };
+      query.push({
+        $match: {
+          $or: [{ Name: { $regex: searchTerm, $options: "i" } }],
+        },
+      });
     }
+
     if (categoryId && !searchTerm) {
-      query = { _id: categoryId };
+      query.push({
+        $match: {
+          $expr: { $eq: ["$_id", { $toObjectId: categoryId }] },
+        },
+      });
     }
-    categories = await categoryModel.find(query).sort({ _id: -1 });
+
+    categories = await categoryModel.aggregate(query);
   } catch (err) {
     const error = new HttpError(err, 500);
     return next(error);
   }
+
+  const data = categories;
 
   const total = categories.length;
 
   res.status(200).json({
     message: "sucessfully retrieved records",
     total,
-    data: categories,
+    data,
   });
 };
 
 const updateCategory = async (req, res, next) => {
-  const { Name, RecordStatusType_ReferenceId } = req.body;
+  const { Name, RecordStatusType_ReferenceId, ColorId } = req.body;
   const categoryId = req.params.id;
   const { userId } = req.userData;
 
@@ -113,6 +165,7 @@ const updateCategory = async (req, res, next) => {
     createActivityLog.OldValue = category.toObject();
 
     category.Name = Name;
+    category.ColorId = ColorId;
     category.RecordStatusType_ReferenceId = RecordStatusType_ReferenceId;
     category.save();
 
@@ -160,6 +213,8 @@ const deleteCategory = async (req, res, next) => {
     return next(error);
   }
 
+  let result;
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -173,7 +228,7 @@ const deleteCategory = async (req, res, next) => {
     createActivityLog.NewValue = null;
     await createActivityLog.save({ session: sess });
 
-    await category.deleteOne({ session: sess });
+    result = await category.deleteOne({ session: sess });
 
     await sess.commitTransaction();
   } catch (err) {
@@ -181,8 +236,11 @@ const deleteCategory = async (req, res, next) => {
     return next(error);
   }
 
+  const data = category.toObject({ getters: true });
+
   res.status(200).json({
     message: "sucessfully deleted records",
+    data,
   });
 };
 
@@ -190,3 +248,4 @@ exports.createCategory = createCategory;
 exports.getCategories = getCategories;
 exports.updateCategory = updateCategory;
 exports.deleteCategory = deleteCategory;
+exports.getCategoriesProductColors = getCategoriesProductColors;

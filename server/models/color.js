@@ -13,6 +13,15 @@ const colorSchema = new Schema({
     type: String,
     required: true,
   },
+  Default: {
+    type: Boolean,
+    required: true,
+  },
+  RepresentationId: {
+    type: mongoose.Types.ObjectId,
+    required: true,
+    ref: "Representation",
+  },
   RecordStatusType_ReferenceId: {
     type: mongoose.Types.ObjectId,
     required: true,

@@ -5,6 +5,10 @@ const Schema = mongoose.Schema;
 
 const representationSchema = new Schema({
   Name: { type: String, required: true },
+  Default: {
+    type: Boolean,
+    required: true,
+  },
   RecordStatusType_ReferenceId: {
     type: mongoose.Types.ObjectId,
     required: true,

@@ -16,9 +16,25 @@ router.get(
 );
 
 router.post(
+  "/deleteMultiple",
+  validateRequestMW.validateRequest(
+    expressValidatorUtil.deleteGroupProductForm()
+  ),
+  productsController.deleteGroupProduct
+);
+
+router.post(
   "/",
   validateRequestMW.validateRequest(expressValidatorUtil.productForm()),
   productsController.createProduct
+);
+
+router.put(
+  "/:productId/category/:categoryId?",
+  validateRequestMW.validateRequest(
+    expressValidatorUtil.productCategoryParam()
+  ),
+  productsController.updateProductCategory
 );
 
 router.put(

@@ -8,6 +8,11 @@ const categorySchema = new Schema({
     type: String,
     required: true,
   },
+  ColorId: {
+    type: mongoose.Types.ObjectId,
+    required: true,
+    ref: "Color",
+  },
   RecordStatusType_ReferenceId: {
     type: mongoose.Types.ObjectId,
     required: true,

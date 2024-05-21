@@ -67,9 +67,8 @@ const signup = async (req, res, next) => {
   );
 
   res.status(201).json({
-    userId: createdUser.id,
-    email: createdUser.Email,
-    token: token,
+    message: "sucessfully created records",
+    data: { userId: createdUser.id, email: createdUser.Email, token: token },
   });
 };
 
@@ -130,9 +129,14 @@ const login = async (req, res, next) => {
     next
   );
 
-  res
-    .status(200)
-    .json({ userId: existingUser.id, email: existingUser.email, token: token });
+  res.status(200).json({
+    message: "sucessfully logged in",
+    data: {
+      userId: existingUser.id,
+      email: existingUser.email,
+      token: token,
+    },
+  });
 };
 
 const forgotPassword = async (req, res, next) => {
@@ -234,7 +238,7 @@ const resetPassword = async (req, res, next) => {
   }
 
   if ((token && token.UserId.Email !== Email) || !token) {
-    const error = new HttpError("Invalid or expired token", 401);
+    const error = new HttpError("Invalid or expired token", 404);
     return next(error);
   }
 
@@ -253,7 +257,7 @@ const resetPassword = async (req, res, next) => {
       return next(error);
     }
 
-    const error = new HttpError("Invalid or expired token", 401);
+    const error = new HttpError("Invalid or expired token", 404);
     return next(error);
   }
 

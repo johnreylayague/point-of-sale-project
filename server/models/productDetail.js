@@ -7,6 +7,7 @@ const productDetail = new Schema({
   Name: {
     type: String,
     required: true,
+    unique: true,
   },
   Description: {
     type: String,

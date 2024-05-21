@@ -1,3 +1,5 @@
 npm install react-router-dom
 npm install react-hook-form
-npm install dompurify
+npm install react-number-format
+npm i @tanstack/react-query
+--npm install dompurify

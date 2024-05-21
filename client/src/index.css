@@ -1,0 +1,23 @@
+table {
+  max-width: 740px;
+  margin: 11px auto 0;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td,
+th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+p {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}

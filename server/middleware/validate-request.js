@@ -13,7 +13,9 @@ const validateRequest = (validations) => {
       return next();
     }
 
-    res.status(422).json({ errors: errors.array() });
+    res
+      .status(422)
+      .json({ message: "validation failed", errors: errors.array() });
   };
 };
 

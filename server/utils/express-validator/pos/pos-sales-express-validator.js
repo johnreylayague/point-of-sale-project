@@ -63,7 +63,7 @@ const salesForm = () => [
           let txt = ``;
           if (property.length) {
             const errorMessage = formatterUtil.formatErrorMessages(property);
-            txt = `Invalid property [ ${errorMessage} ] in Object ${(index += 1)} `;
+            txt = `Invalid property [ ${errorMessage} ] in Object ${index} `;
           }
           return txt;
         })
@@ -87,7 +87,7 @@ const salesForm = () => [
           let txt = ``;
           if (property.length) {
             const separator = formatterUtil.formatErrorMessages(property);
-            txt = `Missing [ ${separator} ] in object ${(index += 1)} `;
+            txt = `Missing [ ${separator} ] in Object ${index} `;
           }
           return txt;
         })
@@ -139,7 +139,7 @@ const salesForm = () => [
           let txt = ``;
           if (productId.length) {
             const separator = formatterUtil.formatErrorMessages(productId);
-            txt = ` ${path} Id [ ${separator} ] does not exist in object ${(index += 1)} `;
+            txt = ` ${path} Id [ ${separator} ] does not exist in Object ${index} `;
           }
           return txt;
         })
